@@ -17,13 +17,17 @@ namespace IdentityServer.ConsoleClient
                 return;
             }
 
+            #region ROP
+
             using var requestClient = new HttpClient();
-            var token = requestClient.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest()
+            var token = requestClient.RequestPasswordTokenAsync(new PasswordTokenRequest()
             {
                 Address = discoveryDoc.TokenEndpoint,
-                ClientId = "m2m.postman",
+                ClientId = "ROP-Client",
                 ClientSecret = "password",
-                Scope = "api.read"
+                Scope = "api.read",
+                UserName = "mohammadjavad",
+                Password = "Tavakoli"
             }).Result;
             if (token.IsError)
             {
@@ -31,6 +35,27 @@ namespace IdentityServer.ConsoleClient
                 return;
             }
             Console.WriteLine(token.AccessToken);
+
+            #endregion
+            
+
+            #region ClientCredentials
+            // using var requestClient = new HttpClient();
+            // var token = requestClient.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest()
+            // {
+            //     Address = discoveryDoc.TokenEndpoint,
+            //     ClientId = "m2m.postman",
+            //     ClientSecret = "password",
+            //     Scope = "api.read"
+            // }).Result;
+            // if (token.IsError)
+            // {
+            //     Console.WriteLine("Error token");
+            //     return;
+            // }
+            // Console.WriteLine(token.AccessToken);
+            #endregion
+      
 
             using var client = new HttpClient();
             client.SetBearerToken(token.AccessToken);

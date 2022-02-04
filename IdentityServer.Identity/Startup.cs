@@ -4,10 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace IdentityServer.Identity
 {
@@ -31,25 +28,48 @@ namespace IdentityServer.Identity
                 })
                 .AddInMemoryApiResources(new List<ApiResource>
                 {
-                    new ApiResource("peopleApi","people-api")
+                    new ApiResource("peopleApi", "people-api")
                     {
-                        Scopes=new List<string>(){"api.read"}
+                        Scopes = new List<string>() {"api.read"}
                     }
                 })
                 .AddInMemoryClients(new List<Client>
                 {
                     new Client()
                     {
-                        ClientId="m2m.postman",
-                        ClientName="post man client",
+                        ClientId = "m2m.postman",
+                        ClientName = "post man client",
                         ClientSecrets =
                         {
                             new Secret("password".Sha256())
                         },
-                        AllowedGrantTypes={GrantType.ClientCredentials},
-                        AllowedScopes={ "api.read" }
+                        AllowedGrantTypes = {GrantType.ClientCredentials},
+                        AllowedScopes = {"api.read"},
+                        Claims = new List<ClientClaim>()
+                        {
+                            new ClientClaim("UserEmail", "test@gmail.com"),
+                            new ClientClaim("UserMobile", "09120000000")
+                        }
+                    },
+                    //just for test
+                    new Client()
+                    {
+                        ClientId = "ROP-Client",
+                        ClientSecrets =
+                        {
+                            new Secret("password".Sha256())
+                        },
+                        AllowedGrantTypes = {GrantType.ResourceOwnerPassword},
+                        AllowedScopes = {"api.read"},
+                        Claims = new List<ClientClaim>()
+                        {
+                            new ClientClaim("UserEmail", "test@gmail.com"),
+                            new ClientClaim("UserMobile", "09120000000")
+                        }
                     }
-                });;
+                })
+                .AddResourceOwnerValidator<UserValidator.UserValidator>();
+            ;
             services.AddRazorPages();
         }
 
