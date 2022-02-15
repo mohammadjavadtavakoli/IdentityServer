@@ -1,0 +1,15 @@
+﻿@model Login;
+
+<form asp-action="login">
+
+    <input hidden type="text" asp-for="RedirectUrl" />
+    <label asp-for="Username">Username</label>
+    <input type="text" asp-for="Username" />
+    <br />
+    <label asp-for="Password">Password</label>
+    <input type="text" asp-for="Password" />
+
+    <hr />
+
+    <button type="submit">Login</button>
+</form>

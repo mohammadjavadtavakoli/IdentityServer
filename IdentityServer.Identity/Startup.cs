@@ -1,179 +1,201 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using IdentityServer.Identity.UserValidator;
+using IdentityServer4.EntityFramework.DbContexts;
+using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Collections.Generic;
-using System.Reflection;
-using Microsoft.EntityFrameworkCore;
-using IdentityServer4.EntityFramework.DbContexts;
-using System.Linq;
-using IdentityServer4.EntityFramework.Mappers;
 
 namespace IdentityServer.Identity
 {
     public class Startup
     {
-        public IConfiguration Configuration;
+        private IConfiguration _configuration;
 
         public Startup(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
         }
 
-
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-          
-            var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
-            var connection = Configuration.GetConnectionString("IdentityDbConnection");
+
+
+            services.AddAuthentication(config =>
+            {
+                config.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                config.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                config.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                config.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            }).AddCookie(config =>
+            {
+                config.LoginPath = "/Account/Login";
+                config.LogoutPath = "/Account/Logout";
+                config.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+            });
+
+
+
+            var connection = _configuration.GetConnectionString("IdentityServerDbConnection");
+
+            var migrationAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+
+
+            //            services.AddIdentityServer()
+            //                .AddDeveloperSigningCredential()
+            //                .AddConfigurationStore(options =>
+            //                {
+            //                    options.ConfigureDbContext = builder => builder.UseSqlServer(connection,
+            //                        optionsBuilder => optionsBuilder.MigrationsAssembly(migrationAssembly));
+            //                })
+            //                .AddOperationalStore(options =>
+            //                {
+            //                    options.ConfigureDbContext = builder => builder.UseSqlServer(connection,
+            //                        optionsBuilder => optionsBuilder.MigrationsAssembly(migrationAssembly));
+            //                })
+            //                .AddResourceOwnerValidator<UserValidator.UserValidator>();
             services.AddIdentityServer()
                 .AddDeveloperSigningCredential()
-                .AddConfigurationStore(options =>
+                .AddInMemoryIdentityResources(new List<IdentityResource>
                 {
-                    options.ConfigureDbContext = builder =>
-                        builder.UseSqlServer(connection,
-                            optionBuilder => optionBuilder.MigrationsAssembly(migrationsAssembly));
+                    new IdentityResources.OpenId(),
+                    new IdentityResources.Profile()
                 })
-                .AddOperationalStore(options =>
+                .AddInMemoryApiScopes(new List<ApiScope>()
                 {
-                    options.ConfigureDbContext = builder =>
-                        builder.UseSqlServer(connection,
-                            optionBuilder => optionBuilder.MigrationsAssembly(migrationsAssembly));
-                });
-            #region InMemory
+                    new ApiScope("api.Read")
+                })
+                .AddInMemoryApiResources(new List<ApiResource>
+                {
+                    new ApiResource("PeopleApi","people api")
+                    {
+                        Scopes = new List<string>(){ "api.Read" }
+                    }
+                })
+                .AddInMemoryClients(new List<Client>
+                {
+                    new Client()
+                    {
+                        ClientId = "mtm.PostMan",
+                        ClientName = "post man client",
+                        ClientSecrets =
+                        {
+                            new Secret("Password".Sha256())
+                        },
+                        AllowedGrantTypes = GrantTypes.ClientCredentials,
+                        AllowedScopes = { "api.Read" },
+                        Claims = new List<ClientClaim>
+                        {
+                            new ClientClaim("UserEmail","test@gmail.com"),
+                            new ClientClaim("UserMobile","0912098823")
+                        }
+                    },
+                    new Client()
+                    {
+                        ClientId = "ROP-client",
+                        ClientSecrets =
+                        {
+                            new Secret("Password".Sha256())
+                        },
+                        AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
+                        AllowedScopes = { "api.Read" },
+                        Claims = new List<ClientClaim>
+                        {
+                            new ClientClaim("UserEmail","test@gmail.com"),
+                        }
+                    },
+                    new Client()
+                    {
+                        ClientId = "code-client",
+                        ClientSecrets =
+                        {
+                            new Secret("Password".Sha256())
+                        },
+                        AllowedGrantTypes = GrantTypes.Code,
 
-            // services.AddIdentityServer()
-            //     .AddDeveloperSigningCredential()
-            //     .AddInMemoryApiScopes(new List<ApiScope>()
-            //     {
-            //         new ApiScope("api.read")
-            //     })
-            //     .AddInMemoryApiResources(new List<ApiResource>
-            //     {
-            //         new ApiResource("peopleApi", "people-api")
-            //         {
-            //             Scopes = new List<string>() {"api.read"}
-            //         }
-            //     })
-            //     .AddInMemoryClients(new List<Client>
-            //     {
-            //         new Client()
-            //         {
-            //             ClientId = "m2m.postman",
-            //             ClientName = "post man client",
-            //             ClientSecrets =
-            //             {
-            //                 new Secret("password".Sha256())
-            //             },
-            //             AllowedGrantTypes = {GrantType.ClientCredentials},
-            //             AllowedScopes = {"api.read"},
-            //             Claims = new List<ClientClaim>()
-            //             {
-            //                 new ClientClaim("UserEmail", "test@gmail.com"),
-            //                 new ClientClaim("UserMobile", "09120000000")
-            //             }
-            //         },
-            //         //just for test
-            //         new Client()
-            //         {
-            //             ClientId = "ROP-Client",
-            //             ClientSecrets =
-            //             {
-            //                 new Secret("password".Sha256())
-            //             },
-            //             AllowedGrantTypes = {GrantType.ResourceOwnerPassword},
-            //             AllowedScopes = {"api.read"},
-            //             Claims = new List<ClientClaim>()
-            //             {
-            //                 new ClientClaim("UserEmail", "test@gmail.com"),
-            //                 new ClientClaim("UserMobile", "09120000000")
-            //             }
-            //         }
-            //     })
-            //     .AddResourceOwnerValidator<UserValidator.UserValidator>();
+                        RedirectUris =
+                        {
+                            "https://localhost:44312/signin-oidc"
+                        },
+                        AllowedScopes = { "api.Read","openid","profile" },
+                    }
+                })
+                .AddResourceOwnerValidator<UserValidator.UserValidator>();
 
-            #endregion
-
-            services.AddRazorPages();
+            services.AddControllersWithViews();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            initDataBase(app);
+            //InitDataBase(app);
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-            else
-            {
-                app.UseExceptionHandler("/Error");
-            }
-
-            app.UseStaticFiles();
 
             app.UseRouting();
 
-            app.UseAuthorization();
+            app.UseEndpoints(route => { route.MapDefaultControllerRoute(); });
+
 
             app.UseIdentityServer();
-
-            //app.UseEndpoints(endpoints =>
-            //{
-            //    endpoints.MapRazorPages();
-            //});
         }
 
-        public void initDataBase(IApplicationBuilder app)
+        public void InitDataBase(IApplicationBuilder app)
         {
             using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
             {
                 scope.ServiceProvider.GetRequiredService<PersistedGrantDbContext>().Database.Migrate();
 
-                var ctx = scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
-                ctx.Database.Migrate();
-                if (!ctx.Clients.Any())
+                var context = scope.ServiceProvider.GetRequiredService<ConfigurationDbContext>();
+                context.Database.Migrate();
+                if (!context.Clients.Any())
                 {
-
-                    var client = new Client()
+                    Client c = new Client()
                     {
-                        ClientId = "ROP-Client",
+                        ClientId = "ROP-client",
                         ClientSecrets =
-                                 {
-                                     new Secret("password".Sha256())
-                                 },
-                        AllowedGrantTypes = { GrantType.ResourceOwnerPassword },
-                        AllowedScopes = { "api.read" },
-                        Claims = new List<ClientClaim>()
-                                 {
-                                     new ClientClaim("UserEmail", "test@gmail.com"),
-                                     new ClientClaim("UserMobile", "09120000000")
-                                 }
+                        {
+                            new Secret("Password".Sha256())
+                        },
+                        AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
+                        AllowedScopes = { "api.Read" },
+                        Claims = new List<ClientClaim>
+                        {
+                            new ClientClaim("UserEmail", "test@gmail.com"),
+                        }
                     };
-                    ctx.Clients.Add(client.ToEntity());
-                    ctx.SaveChanges();
+                    context.Clients.Add(c.ToEntity());
+                    context.SaveChanges();
                 }
 
-                if (!ctx.ApiResources.Any())
+                if (!context.ApiResources.Any())
                 {
-                    var ApiResource = new ApiResource("peopleApi", "people-api")
+                    var r = new ApiResource("PeopleApi", "people api")
                     {
-                        Scopes = new List<string>() { "api.read" }
+                        Scopes = new List<string>() { "api.Read" }
                     };
-                    ctx.ApiResources.Add(ApiResource.ToEntity());
-                    ctx.SaveChanges();
+
+                    context.ApiResources.Add(r.ToEntity());
+                    context.SaveChanges();
                 }
 
-                if (!ctx.ApiScopes.Any())
+                if (!context.ApiScopes.Any())
                 {
-                    var ApiScopes = new ApiScope("api.read");
- 
-                    ctx.ApiScopes.Add(ApiScopes.ToEntity());
-                    ctx.SaveChanges();
+                    var s = new ApiScope("api.Read");
+                    context.ApiScopes.Add(s.ToEntity());
+                    context.SaveChanges();
                 }
+
 
             }
         }
