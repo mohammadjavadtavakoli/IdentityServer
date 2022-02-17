@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace IdentityServer.Identity.Models
 {
-    public class Login
+    public class Users
     {
-        [Required]
-        public string Username { get; set; }
-        [Required]
-        public string Password { get; set; }
-        public string RedirectUrl { get; set; }
+        [Key]
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string password { get; set; }
+
     }
 }

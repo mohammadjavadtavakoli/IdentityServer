@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using IdentityServer.Identity.Data.Application.Context;
+using IdentityServer.Identity.Services;
 using IdentityServer.Identity.UserValidator;
 using IdentityServer4.EntityFramework.DbContexts;
 using IdentityServer4.EntityFramework.Mappers;
@@ -129,6 +131,13 @@ namespace IdentityServer.Identity
                     }
                 })
                 .AddResourceOwnerValidator<UserValidator.UserValidator>();
+
+            services.AddDbContext<ApplicationDbContext>(option =>
+            {
+                option.UseSqlServer(_configuration.GetConnectionString("IdentityDbConnection"));
+            });
+
+            services.AddTransient<IUserService, UserService>();
 
             services.AddControllersWithViews();
         }
