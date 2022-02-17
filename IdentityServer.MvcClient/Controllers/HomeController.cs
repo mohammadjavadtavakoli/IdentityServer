@@ -19,6 +19,11 @@ namespace IdentityServer.MvcClient.Controllers
             _logger = logger;
         }
 
+        public IActionResult Logout()
+        {
+            return SignOut("cookie", "OpenIDConnect");
+        }
+
         public IActionResult Index()
         {
             return View();

@@ -1,6 +1,7 @@
 ﻿using IdentityModel;
 using IdentityServer.Identity.Models;
 using IdentityServer.Identity.Services;
+using IdentityServer4.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -15,26 +16,30 @@ namespace IdentityServer.Identity.Controllers
     public class AccountController : Controller
     {
         private IUserService _UserService;
+        private IIdentityServerInteractionService _IdentityServerInteractionService;
 
-        public AccountController(IUserService userService)
+        public AccountController(IUserService userService, IIdentityServerInteractionService identityServerInteractionService)
         {
             _UserService = userService;
+            _IdentityServerInteractionService = identityServerInteractionService;
+
         }
+
 
         public IActionResult Login(string ReturnUrl)
         {
-           return View(new Login {RedirectUrl= ReturnUrl });
+            return View(new Login { RedirectUrl = ReturnUrl });
         }
 
         [HttpPost]
         public async Task<IActionResult> LoginAsync(Login login)
         {
-            if(!ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
                 return View(login);
             }
-           var user= _UserService.GetUserByUserNameAndPassword(login.Username, login.Password);
-            if(user==null)
+            var user = _UserService.GetUserByUserNameAndPassword(login.Username, login.Password);
+            if (user == null)
             {
                 return View(login);
             }
@@ -46,8 +51,15 @@ namespace IdentityServer.Identity.Controllers
             };
             var identity = new ClaimsIdentity(clientClaim, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
-           await HttpContext.SignInAsync(principal, new AuthenticationProperties());
+            await HttpContext.SignInAsync(principal, new AuthenticationProperties());
             return Redirect(login.RedirectUrl);
+        }
+
+        public async Task<IActionResult> Logout(string logoutId)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var logoutContext = await _IdentityServerInteractionService.GetLogoutContextAsync(logoutId);
+            return Redirect("https://localhost:44312/signin-oidc/signout-callback-oidc");
         }
     }
 }

@@ -36,6 +36,7 @@ namespace IdentityServer.MvcClient
                     option.ClientId = "code-client";
                     option.ClientSecret = "Password";
                     option.ResponseType = "code";
+                 
                 });
             services.AddControllersWithViews();
         }

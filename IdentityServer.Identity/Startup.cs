@@ -127,6 +127,9 @@ namespace IdentityServer.Identity
                         {
                             "https://localhost:44312/signin-oidc"
                         },
+                        PostLogoutRedirectUris = { "https://localhost:44312/signin-oidc/signout-callback-oidc" },
+
+
                         AllowedScopes = { "api.Read","openid","profile" },
                     }
                 })
